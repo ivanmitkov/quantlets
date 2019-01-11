@@ -1,0 +1,12 @@
+
+Name of Quantlet: CRYPTdmtest
+
+Published in: Master thesis
+
+Description: provides information though Diebold-Mariano test about the accuracy of the predicted realized volatility from various models
+
+Keywords: cryptocurrency, RV, realized volatility, accuracy, Diebold Mariano test, DM test
+
+Author: Ivan Mitkov
+
+Submitted:  Fri, January 11 2019 by Ivan Mitkov

@@ -1,0 +1,12 @@
+
+Name of Quantlet: CRYPTharfnn
+
+Published in: Master thesis
+
+Description: forecasts the realized volatility of a portfolio from cryptocurrencies by the means of the Heterogeneous autoregressive (HAR) model and a hybrid between HAR and a simple feedforward neural network (FNN-HAR)
+
+Keywords: cryptocurrency, RV, HAR, FNN, realized volatility
+
+Author: Ivan Mitkov
+
+Submitted:  Fri, January 11 2019 by Ivan Mitkov
