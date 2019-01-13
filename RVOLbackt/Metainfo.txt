@@ -3,10 +3,14 @@ Name of Quantlet: RVOLbackt
 
 Published in: Master thesis
 
-Description: provides information though Diebold-Mariano test about the accuracy of the predicted realized volatility from various models
+Description: tests if the realized volatility is a good approach for calculating Value at Risk. Backtesting algorithms like unconditional convergence test (Kupiec test) and conditional convergence test (Christoffersen test) are applied.
 
-Keywords: cryptocurrency, RV, realized volatility, accuracy, Diebold Mariano test, DM test
+Keywords: cryptocurrency, RV, realized, volatility, VaR, backtests, backtesting, Kupiec, Christoffersen, value, risk
 
 Author: Ivan Mitkov
 
-Submitted:  Fri, January 11 2019 by Ivan Mitkov
+Submitted: Fri, January 11 2019 by Ivan Mitkov
+
+Datafile: forecasts_high_vol.csv, forecasts_low_vol.csv
+
+Output: VaR_plot_high_005.png, VaR_plot_high_010.png, VaR_plot_low_005.png, VaR_plot_low_010.png

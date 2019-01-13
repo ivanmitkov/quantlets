@@ -110,8 +110,9 @@ plt.plot(df['GRU'], linewidth=1, color = 'red', alpha=0.5)
 plt.ylabel('Realized volatility')
 plt.xlabel('Time horizon')
 plt.title('Out-of-sample predictions')
+plt.savefig('high_volatility_long.png')
 plt.show()
-plt.savefig('output/high_volatility_long.png')
+
 
 # 2. High volatility time longer training data set
 harfnn = pd.read_csv(r'data/harfnn_outofsample_predictions_high_vol_short.csv', sep = ';')
@@ -146,8 +147,9 @@ plt.plot(df['GRU'], linewidth=1, color = 'red', alpha=0.5)
 plt.ylabel('Realized volatility')
 plt.xlabel('Time horizon')
 plt.title('Out-of-sample predictions')
+plt.savefig('high_volatility_short.png')
 plt.show()
-plt.savefig('output/high_volatility_short.png')
+
 
 # 3. Low volatility time longer training data set
 harfnn = pd.read_csv(r'data/harfnn_outofsample_predictions_low_vol_long.csv', sep = ';')
@@ -182,8 +184,9 @@ plt.plot(df['GRU'], linewidth=1, color = 'red', alpha=0.5)
 plt.ylabel('Realized volatility')
 plt.xlabel('Time horizon')
 plt.title('Out-of-sample predictions')
+plt.savefig('low_volatility_long.png')
 plt.show()
-plt.savefig('output/low_volatility_long.png')
+
 
 # 4. Low volatility time longer training data set
 harfnn = pd.read_csv(r'data/harfnn_outofsample_predictions_low_vol_short.csv', sep = ';')
@@ -218,5 +221,5 @@ plt.plot(df['GRU'], linewidth=1, color = 'red', alpha=0.5)
 plt.ylabel('Realized volatility')
 plt.xlabel('Time horizon')
 plt.title('Out-of-sample predictions')
+plt.savefig('low_volatility_short.png')
 plt.show()
-plt.savefig('output/low_volatility_short.png')

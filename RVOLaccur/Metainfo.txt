@@ -3,26 +3,14 @@ Name of Quantlet: RVOLaccur
 
 Published in: Master thesis
 
-Description: forecasts the realized volatility of a portfolio from cryptocurrencies by the means of recurrent neural networks
+Description: checks the predicting accuracy of various models through Diebold Mariano tests. All forecasts are plotted next to the target value as well. 
 
-Keywords: cryptocurrency, RNN, LSTM, GRU
+Keywords: cryptocurrency, RNN, LSTM, GRU, DM, test, Diebold, Mariano, HAR, FNN
 
 Author: Ivan Mitkov
 
 Submitted:  Fri, January 11 2019 by Ivan Mitkov
 
-Datafile:
-- rnn_outofsample_predictions_high_vol_long.csv
-- rnn_outofsample_predictions_high_vol_short.csv
-- rnn_outofsample_predictions_low_vol_long.csv
-- rnn_outofsample_predictions_low_vol_short.csv
-- harfnn_outofsample_predictions_high_vol_long.csv
-- harfnn_outofsample_predictions_high_vol_short.csv
-- harfnn_outofsample_predictions_low_vol_long.csv
-- harfnn_outofsample_predictions_low_vol_short.csv
+Datafile: rnn_outofsample_predictions_high_vol_long.csv, rnn_outofsample_predictions_high_vol_short.csv, rnn_outofsample_predictions_low_vol_long.csv, rnn_outofsample_predictions_low_vol_short.csv, harfnn_outofsample_predictions_high_vol_long.csv, harfnn_outofsample_predictions_high_vol_short.csv, harfnn_outofsample_predictions_low_vol_long.csv, harfnn_outofsample_predictions_low_vol_short.csv
 
-Output:
-- high_volatility_long.png
-- high_volatility_short.png
-- low_volatility_long.png
-- low_volatility_short.png
+Output: high_volatility_long.png, high_volatility_short.png, low_volatility_long.png, low_volatility_short.png
