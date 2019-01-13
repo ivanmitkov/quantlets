@@ -1,379 +1,222 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Nov 10 14:39:15 2018
+Created on Sat Nov 24 18:37:02 2018
 
 @author: ivanmitkov
 """
 
-# MLP for Pima Indians Dataset with grid search via sklearn
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.wrappers.scikit_learn import KerasClassifier
-from sklearn.model_selection import GridSearchCV
-import numpy
+def dm_test(actual_lst, prediction_1, prediction_2, horizon = 1, power = 2):
 
-def train_test_data(dataframe, fraction, RNN):
+    # Import libraries
+    from scipy.stats import t
+    import collections
     import pandas as pd
     import numpy as np
-    from numpy import sqrt
-
-    dataframe = dataframe.reset_index(drop = True)
     
-    rows = np.quantile((np.array(dataframe.index)), fraction).astype(int)+1
+    # Initialise lists
+    e1_lst = []
+    e2_lst = []
+    d_lst  = []
     
-    train_X = dataframe[:rows]
-    train_X = train_X[['DAILY_RV', 'WEEKLY_RV', 'MONTHLY_RV']]
-    train_X.reset_index(drop = True, inplace = True)
+    # convert every value of the lists into real values
+    actual_lst = pd.Series(actual_lst).apply(lambda x: float(x)).tolist()
+    prediction_1 = pd.Series(prediction_1).apply(lambda x: float(x)).tolist()
+    prediction_2 = pd.Series(prediction_2).apply(lambda x: float(x)).tolist()
     
-    test_X = dataframe[rows:]
-    test_X = test_X[['DAILY_RV', 'WEEKLY_RV', 'MONTHLY_RV']]
-    test_X.reset_index(drop = True, inplace = True)
+    # Length of lists (as real numbers)
+    T = float(len(actual_lst))
     
-    # Split the targets into training/testing sets
-    train_Y = dataframe['TARGET_RV'][:rows]
-    train_Y.reset_index(drop = True, inplace = True)
-    test_Y = dataframe['TARGET_RV'][rows:]
-    test_Y.reset_index(drop = True, inplace = True)
+    # construct d according to crit
+    for actual,p1,p2 in zip(actual_lst,prediction_1,prediction_2):
+        e1_lst.append((actual - p1)**2)
+        e2_lst.append((actual - p2)**2)
+    for e1, e2 in zip(e1_lst, e2_lst):
+        d_lst.append(e1 - e2)
+  
     
-    if RNN == False:
-        return(train_X, train_Y, test_X, test_Y)
-    else:
-        train_X = train_X.values[..., 0]
-        test_X = test_X.values[..., 0]
-        train_X = np.reshape(train_X, (train_X.shape[0], 1, 1))
-        test_X = np.reshape(test_X, (test_X.shape[0], 1, 1))
-        return(train_X, train_Y, test_X, test_Y) 
+    # Mean of d        
+    mean_d = pd.Series(d_lst).mean()
+    
+    # Find autocovariance and construct DM test statistics
+    def autocovariance(Xi, N, k, Xs):
+        autoCov = 0
+        T = float(N)
+        for i in np.arange(0, N-k):
+              autoCov += ((Xi[i+k])-Xs)*(Xi[i]-Xs)
+        return (1/(T))*autoCov
+    gamma = []
+    for lag in range(0,horizon):
+        gamma.append(autocovariance(d_lst,len(d_lst),lag,mean_d)) # 0, 1, 2
+    V_d = (gamma[0] + 2*sum(gamma[1:]))/T
+    DM_stat=V_d**(-0.5)*mean_d
+    harvey_adj=((T+1-2*horizon+horizon*(horizon-1)/T)/T)**(0.5)
+    DM_stat = harvey_adj*DM_stat
+    
+    # Find p-value
+    p_value = 2*t.cdf(-abs(DM_stat), df = T - 1)
+    
+    # Construct named tuple for return
+    dm_return = collections.namedtuple('dm_return', 'DM p_value')
+    
+    rt = dm_return(DM = DM_stat, p_value = p_value)
+    
+    return rt
+    
+# Actual analysis
         
-"""        
-def train_test_data(squared_retuns, frequency, fraction, back_times):
-    import pandas as pd
-    daily_observations = int(60 / frequency * 24)
-    from numpy import sqrt
-    dataframe = pd.DataFrame()
-    dataframe['DAILY_RV'] = sqrt(squared_retuns.rolling(daily_observations).sum())
-    dataframe['WEEKLY_RV'] = sqrt(squared_retuns.rolling(7 * daily_observations).sum())    
-    dataframe['MONTHLY_RV'] = sqrt(squared_retuns.rolling(30 * daily_observations).sum())
-    dataframe['RV_DAY_AHEAD'] = dataframe['DAILY_RV'].shift(-daily_observations)
-    dataframe = dataframe.dropna(how = 'any')
-    train_data = dataframe.sample(frac = fraction)
-    index_train = train_data.index
-    index_test = list(set(dataframe.index)-set(index_train))
-    test_data = dataframe.ix[index_test]
-    train_data = train_data.reset_index(drop = True)
-    test_data = test_data.reset_index(drop = True)  
-    train_data = train_data.values
-    train_data = train_data.astype('float32') 
-    test_data = test_data.values
-    test_data = test_data.astype('float32') 
-    
-    # reshape into X=t and Y=t+1
-    trainX = train_data[..., 0]
-    trainY = train_data[..., 3]
-    testX = test_data[..., 0]
-    testY = train_data[..., 3]
-    
-    # reshape input to be [samples, time steps, features]
-    trainX = numpy.reshape(trainX, (trainX.shape[0], 1, 1))
-    testX = numpy.reshape(testX, (testX.shape[0], 1, 1))
-    return(trainX, trainY, testX, testY)
-"""
-    
-    
-class Neural_Networks(object):
-    import numpy as np
-    import math
-    from sklearn import metrics
-    from keras import optimizers
-    import pandas as pd
-    import numpy as np
-    from keras.layers import SimpleRNN
-    from keras.layers import Dense
-    from keras.models import Sequential
-    from keras import optimizers
-    import math
-    from sklearn.metrics import mean_squared_error
-    
-    def __init__(self, NN_type, nn_inputs, train_X, train_Y, test_X, test_Y):       
-        self.NN_type = NN_type
-        self.train_X = train_X
-        self.train_Y = train_Y
-        self.test_X = test_X
-        self.test_Y = test_Y
-        self.nn_inputs = nn_inputs 
-        self.output = 1 
-        self.time_steps = 1
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
-    def nn_grid_params(self, dict_models, learning_rate, n_epochs, batch_size):
-        """
-        The function makes a grid search over the hyperparameters for a Simple Recurrent Neural Network.
-        """
-        import pandas as pd
-        import numpy as np
-        from keras.layers import SimpleRNN
-        from keras.layers import LSTM
-        from keras.layers import GRU        
-        from keras.layers import Dense
-        from keras.models import Sequential
-        from keras.layers import LeakyReLU
-        from keras import optimizers
-        import math
-        from sklearn.metrics import mean_squared_error
-        import numpy as np 
-        import numpy.random as rd
-        rd.seed(7)        
- 
-        
-        
-        if self.NN_type == 'SimpleRNN':
-            result = pd.DataFrame()    
-            for i in list(dict_models.keys()):
-                model = Sequential()
-                if dict_models[i]['n_layers'] == 1:
-                    model.add(SimpleRNN(dict_models[i]['n_units'][0], input_shape=(self.time_steps, self.nn_inputs), activation = dict_models[i]['activ_funct']))
-                else:
-                    model.add(SimpleRNN(dict_models[i]['n_units'][0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True, activation = dict_models[i]['activ_funct']))
-                for j in range(2, dict_models[i]['n_layers'] + 1):
-                    if j < dict_models[i]['n_layers']:
-                        model.add(SimpleRNN(dict_models[i]['n_units'][j-1], return_sequences = True, activation = dict_models[i]['activ_funct']))
-                    else:
-                        model.add(SimpleRNN(dict_models[i]['n_units'][len(dict_models[i]['n_units'])-1], return_sequences = False, activation = dict_models[i]['activ_funct']))
-                
-                model.add(Dense(self.output))
-                
-                for rate in learning_rate:
-                    adam = optimizers.adam(lr = rate)
-                    model.compile(loss='mse', optimizer='adam')
-                    
-                    for epoch in n_epochs:
-                        for size in batch_size:
-                            model.fit(self.train_X, self.train_Y, epochs = epoch, batch_size = size, verbose = 0, shuffle = False)
-                            grid = pd.DataFrame()
-                            grid['MODEL'] = [(i)]
-                            grid['LAYERS'] = [(dict_models[i]['n_layers'])]
-                            grid['NEURONS'] = [(dict_models[i]['n_units'])]
-                            grid['RATE'] = rate
-                            grid['SIZE'] = size
-                            grid['MSE'] = model.evaluate(self.train_X, self.train_Y, verbose=0)
-                            result = result.append(grid).reset_index(drop = True)
-            result.sort_values(by=['MSE'], inplace = True)                
-            print(result[:5])
-            
-        if self.NN_type == 'LSTM':
-            result = pd.DataFrame()                
-            for i in list(dict_models.keys()):
-                model = Sequential()
-                if dict_models[i]['n_layers'] == 1:
-                    model.add(LSTM(dict_models[i]['n_units'][0], input_shape=(self.time_steps, self.nn_inputs), activation = dict_models[i]['activ_funct']))
-                else:
-                    model.add(LSTM(dict_models[i]['n_units'][0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True, activation = dict_models[i]['activ_funct']))
-                for j in range(2, dict_models[i]['n_layers'] + 1):
-                    if j < dict_models[i]['n_layers']:
-                        model.add(LSTM(dict_models[i]['n_units'][j-1], return_sequences = True, activation = dict_models[i]['activ_funct']))
-                    else:
-                        model.add(LSTM(dict_models[i]['n_units'][len(dict_models[i]['n_units'])-1], return_sequences = False, activation = dict_models[i]['activ_funct']))
-                
-                model.add(Dense(self.output))
-                
-                for rate in learning_rate:
-                    adam = optimizers.adam(lr = rate)
-                    model.compile(loss='mse', optimizer='adam')
-                    
-                    for epoch in n_epochs:
-                        for size in batch_size:
-                            model.fit(self.train_X, self.train_Y, epochs = epoch, batch_size = size, verbose = 0)
-                            grid = pd.DataFrame()
-                            grid['MODEL'] = [(i)]
-                            grid['LAYERS'] = [(dict_models[i]['n_layers'])]
-                            grid['NEURONS'] = [(dict_models[i]['n_units'])]
-                            grid['RATE'] = rate
-                            grid['SIZE'] = size
-                            grid['MSE'] = model.evaluate(self.train_X, self.train_Y, verbose=0)
-                            result = result.append(grid).reset_index(drop = True)
-            result.sort_values(by=['MSE'], inplace = True)
-            print(result[:5])     
-        
-        if self.NN_type == 'GRU':
-            result = pd.DataFrame()
-            for i in list(dict_models.keys()):
-                model = Sequential()
-                if dict_models[i]['n_layers'] == 1:
-                    model.add(GRU(dict_models[i]['n_units'][0], input_shape=(self.time_steps, self.nn_inputs), activation = dict_models[i]['activ_funct']))
-                else:
-                    model.add(GRU(dict_models[i]['n_units'][0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True, activation = dict_models[i]['activ_funct']))
-                for j in range(2, dict_models[i]['n_layers'] + 1):
-                    if j < dict_models[i]['n_layers']:
-                        model.add(GRU(dict_models[i]['n_units'][j-1], return_sequences = True, activation = dict_models[i]['activ_funct']))
-                    else:
-                        model.add(GRU(dict_models[i]['n_units'][len(dict_models[i]['n_units'])-1], return_sequences = False, activation = dict_models[i]['activ_funct']))
-                
-                model.add(Dense(self.output))
-                
-                for rate in learning_rate:
-                    adam = optimizers.adam(lr = rate)
-                    model.compile(loss='mse', optimizer='adam')
-                    
-                    for epoch in n_epochs:
-                        for size in batch_size:
-                            model.fit(self.train_X, self.train_Y, epochs = epoch, batch_size = size, verbose = 0)
-                            grid = pd.DataFrame()
-                            grid['MODEL'] = [(i)]
-                            grid['LAYERS'] = [(dict_models[i]['n_layers'])]
-                            grid['NEURONS'] = [(dict_models[i]['n_units'])]
-                            grid['RATE'] = rate
-                            grid['SIZE'] = size
-                            grid['MSE'] = model.evaluate(self.train_X, self.train_Y, verbose=0)
-                            result = result.append(grid).reset_index(drop = True)
-            result.sort_values(by=['MSE'], inplace = True)                
-            print(result[:5])
-        
-    def create_nn(self, n_layers, n_units, n_epochs, batch_size, activ_funct, learning_rate):
-        from keras import optimizers
-        #K.clear_session()
-        self.model = Sequential()
-        """
-        The function trains a simple Recurrent neural network.
-        
-        Parameters:
-            time_steps: Sequence of time steps back, that have to be included in the network.
-            
-            n_units: Number of neurons in the corresponding layer. Input as a list, eg [neurons_1_layer, neurons_2_layer]
-            
-            n_layers: Number of layers. 
-            
-            self.nn_inputs: Number inputs. Since we are concentrated just on one variable, it is one for us.
-            
-            n_classes: Number of outputs. Since we are concentrated just on one variable, it is one for us.
-            
-            act: Activation function as a string.
-            
-        """
-        from keras.layers import SimpleRNN
-        from keras.layers import Dense
-        from keras.layers import LSTM
-        from keras.layers import GRU
-        from keras.layers.advanced_activations import LeakyReLU, PReLU
-        import math
-        
-        if self.NN_type == 'SimpleRNN':
+# Import of packages, set wordking directiory
+import os, sys
+os.chdir(r'/Users/ivanmitkov/Desktop/repository/quantlets/RVOLaccur')
+from dalib.packages import *
 
-            if n_layers == 1:
-                self.model.add(SimpleRNN(n_units[0], input_shape=(self.time_steps, self.nn_inputs)))
-                self.model.add(LeakyReLU(alpha=0.1))
-            else:
-                self.model.add(SimpleRNN(n_units[0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True))
-                self.model.add(LeakyReLU(alpha=0.1))
-            for i in range(2, n_layers+1):
-                if i < n_layers:
-                    self.model.add(SimpleRNN(n_units[i-1], return_sequences = True))
-                    self.model.add(LeakyReLU(alpha=0.1))
-                else:
-                    self.model.add(SimpleRNN(n_units[len(n_units)-1], return_sequences = False))
-                    self.model.add(LeakyReLU(alpha=0.1))
+# In order to keep constant outputs, avoiding different weights initialization
+from numpy.random import seed
+seed(1)
 
-        if self.NN_type == 'LSTM':
+# 1. High volatility time longer training data set
+harfnn = pd.read_csv(r'data/harfnn_outofsample_predictions_high_vol_long.csv', sep = ';')
+rnn = pd.read_csv(r'data/rnn_outofsample_predictions_high_vol_long.csv', sep = ';')
+del rnn['DAILY_RV']
 
-            if n_layers == 1:
-                self.model.add(LSTM(n_units[0], input_shape=(self.time_steps, self.nn_inputs)))
-                self.model.add(LeakyReLU(alpha=0.1))
-            else:
-                self.model.add(LSTM(n_units[0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True))
-                self.model.add(LeakyReLU(alpha=0.1))
-            for i in range(2, n_layers+1):
-                if i < n_layers:
-                    self.model.add(LSTM(n_units[i-1], return_sequences = True))
-                    self.model.add(LeakyReLU(alpha=0.1))
-                else:
-                    self.model.add(LSTM(n_units[len(n_units)-1], return_sequences = False))
-                    self.model.add(LeakyReLU(alpha=0.1))                    
+# Predictions
+df = pd.concat([harfnn, rnn], axis = 1)
+del df['Unnamed: 0']
 
-                
-        if self.NN_type == 'GRU':
+models_list = ['NAIVE', 'HAR', 'FNN-HAR', 'SRN', 'LSTM', 'GRU']
+for model in models_list:
+    rest = [n for n in models_list if n != model]
+    for rest_model in rest:
+        print('\nDiebold-Mariano test for forecasting accuracy \n\n\n',
+              'Model to test: ', model, ' and ', rest_model, '\n',
+              'Test statistic: ', dm_test(actual_lst = df['DAILY_RV'], prediction_1 = df[model],
+                      prediction_2 = df[rest_model], horizon = 288)[0], '\n',
+              'P value: ', dm_test(actual_lst = df['DAILY_RV'], prediction_1 = df[model],
+                      prediction_2 = df[rest_model], horizon = 288)[1], '\n',
+              '---------------------------------------------------')
 
-            if n_layers == 1:
-                self.model.add(GRU(n_units[0], input_shape=(self.time_steps, self.nn_inputs)))
-                self.model.add(LeakyReLU(alpha=0.1))
-            else:
-                self.model.add(GRU(n_units[0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True))
-                self.model.add(LeakyReLU(alpha=0.1))
-            for i in range(2, n_layers+1):
-                if i < n_layers:
-                    self.model.add(GRU(n_units[i-1], return_sequences = True))
-                    self.model.add(LeakyReLU(alpha=0.1))
-                else:
-                    self.model.add(GRU(n_units[len(n_units)-1], return_sequences = False))
-                    self.model.add(LeakyReLU(alpha=0.1))
-        self.model.add(Dense(self.output))
-        adam = optimizers.adam(lr = learning_rate)
-        self.model.compile(loss = 'mse', optimizer = 'adam', metrics=['mse', 'mae', 'mape'])
-        self.model.fit(self.train_X, self.train_Y, epochs = n_epochs, batch_size = batch_size, 
-                       verbose=0, validation_data = (self.test_X, self.test_Y), shuffle = False)
-        print(self.model.summary())
+# Visualization
+plt.figure(dpi = 100)
+plt.plot(df['DAILY_RV'], linewidth = 2, color = 'navy')
+plt.plot(df['NAIVE'], linewidth = 1, color = 'gold', alpha=0.5)
+plt.plot(df['HAR'], linewidth=1, color = 'gray', alpha=0.5)
+plt.plot(df['FNN-HAR'], linewidth=1, color = 'brown', alpha=0.5)
+plt.plot(df['SRN'], linewidth=1, color = 'green', alpha=0.5)
+plt.plot(df['LSTM'], linewidth=1, color = 'orange', alpha=0.5)
+plt.plot(df['GRU'], linewidth=1, color = 'red', alpha=0.5)
+plt.ylabel('Realized volatility')
+plt.xlabel('Time horizon')
+plt.title('Out-of-sample predictions')
+plt.show()
+plt.savefig('output/high_volatility_long.png')
 
-    def prediction(self):
-        import pandas as pd
-        self.trainPredict = self.model.predict(self.train_X)
-        self.testPredict = self.model.predict(self.test_X)
-        return(pd.Series(self.trainPredict[:,0]), pd.Series(self.testPredict[:,0]))
-            
-    def evaluation(self):
-        from math import sqrt
-        from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, median_absolute_error, mean_squared_log_error          
-        print('\n\n Train data', self.NN_type, ': \n\nRoot mean squared error: ', "{:.2e}".format(sqrt(mean_squared_error(self.train_Y, self.trainPredict))),
-              '\nMean absolute error: ', "{:.2e}".format(mean_absolute_error(self.train_Y, self.trainPredict)),
-              '\nMean squared logarithmic error: ', "{:.2e}".format(mean_squared_log_error(self.train_Y, self.trainPredict)))
+# 2. High volatility time longer training data set
+harfnn = pd.read_csv(r'data/harfnn_outofsample_predictions_high_vol_short.csv', sep = ';')
+rnn = pd.read_csv(r'data/rnn_outofsample_predictions_high_vol_short.csv', sep = ';')
+del rnn['DAILY_RV']
 
-        print('\n\n Test data', self.NN_type, ': \n\nRoot mean squared error: ', "{:.2e}".format(sqrt(mean_squared_error(self.test_Y, self.testPredict))),
-              '\nMean absolute error: ', "{:.2e}".format(mean_absolute_error(self.test_Y, self.testPredict)),
-              '\nMean squared logarithmic error: ', "{:.2e}".format(mean_squared_log_error(self.test_Y, self.testPredict)))
-        
-    def error_df(self):
-        import pandas as pd
-        from math import sqrt
-        from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, median_absolute_error, mean_squared_log_error 
+# Predictions
+df = pd.concat([harfnn, rnn], axis = 1)
+del df['Unnamed: 0']
 
-        error = pd.DataFrame()
-        #error['COEF'] = pd.Series(('Root mean squared error', 'Mean absolute error', 'Mean squared logarithmic error'))
-        #error['MODEL'] = self.NN_type
-        """
-        error['TRAIN'] = pd.Series((sqrt(mean_squared_error(self.train_Y, self.trainPredict)),
-                                         mean_absolute_error(self.train_Y, self.trainPredict),
-                                         mean_squared_log_error(self.train_Y, self.trainPredict)))
-        
-        error['TEST'] = pd.Series((sqrt(mean_squared_error(self.test_Y, self.testPredict)),
-                                        mean_absolute_error(self.test_Y, self.testPredict),
-                                        mean_squared_log_error(self.test_Y, self.testPredict)))       
-        """
-        error['ERRORS'] = pd.Series((sqrt(mean_squared_error(self.train_Y, self.trainPredict)),
-                                 mean_absolute_error(self.train_Y, self.trainPredict),
-                                 mean_squared_log_error(self.train_Y, self.trainPredict),
-                                 sqrt(mean_squared_error(self.test_Y, self.testPredict)),
-                                 mean_absolute_error(self.test_Y, self.testPredict),
-                                 mean_squared_log_error(self.test_Y, self.testPredict)))   
-        return(error)
-                
-    def visualization(self, test_visualization = False):
-        import matplotlib.pyplot as plt
-        import pandas as pd
-        if test_visualization == False:
-            trainPredict = self.model.predict(self.train_X)
-            plt.figure(dpi = 100)
-            plt.plot(self.train_Y, label = 'Target values')
-            plt.plot(trainPredict, label = 'Predicted values')
-            plt.ylabel('Conditional variance')
-            plt.xlabel('Epochs')
-            plt.title('Train data: Prediction through ' + self.NN_type)
-            plt.legend()
-            plt.show()
-        else:
-            testPredict = self.model.predict(self.test_X)
-            plt.figure(dpi = 100)
-            plt.plot(pd.Series(self.test_Y), label = 'Target values')
-            plt.plot(testPredict, label = 'Predicted values')
-            plt.ylabel('Conditional variance')
-            plt.xlabel('Epochs')
-            plt.title('Test data: Prediction through ' + self.NN_type)
-            plt.legend()
-            plt.show()                            
-                        
-         
+models_list = ['NAIVE', 'HAR', 'FNN-HAR', 'SRN', 'LSTM', 'GRU']
+for model in models_list:
+    rest = [n for n in models_list if n != model]
+    for rest_model in rest:
+        print('\nDiebold-Mariano test for forecasting accuracy \n\n\n',
+              'Model to test: ', model, ' and ', rest_model, '\n',
+              'Test statistic: ', dm_test(actual_lst = df['DAILY_RV'], prediction_1 = df[model],
+                      prediction_2 = df[rest_model], horizon = 288)[0], '\n',
+              'P value: ', dm_test(actual_lst = df['DAILY_RV'], prediction_1 = df[model],
+                      prediction_2 = df[rest_model], horizon = 288)[1], '\n',
+              '---------------------------------------------------')
+
+# Visualization
+plt.figure(dpi = 100)
+plt.plot(df['DAILY_RV'], linewidth = 2, color = 'navy')
+plt.plot(df['NAIVE'], linewidth = 1, color = 'gold', alpha=0.5)
+plt.plot(df['HAR'], linewidth=1, color = 'gray', alpha=0.5)
+plt.plot(df['FNN-HAR'], linewidth=1, color = 'brown', alpha=0.5)
+plt.plot(df['SRN'], linewidth=1, color = 'green', alpha=0.5)
+plt.plot(df['LSTM'], linewidth=1, color = 'orange', alpha=0.5)
+plt.plot(df['GRU'], linewidth=1, color = 'red', alpha=0.5)
+plt.ylabel('Realized volatility')
+plt.xlabel('Time horizon')
+plt.title('Out-of-sample predictions')
+plt.show()
+plt.savefig('output/high_volatility_short.png')
+
+# 3. High volatility time longer training data set
+harfnn = pd.read_csv(r'data/harfnn_outofsample_predictions_low_vol_long.csv', sep = ';')
+rnn = pd.read_csv(r'data/rnn_outofsample_predictions_low_vol_long.csv', sep = ';')
+del rnn['DAILY_RV']
+
+# Predictions
+df = pd.concat([harfnn, rnn], axis = 1)
+del df['Unnamed: 0']
+
+models_list = ['NAIVE', 'HAR', 'FNN-HAR', 'SRN', 'LSTM', 'GRU']
+for model in models_list:
+    rest = [n for n in models_list if n != model]
+    for rest_model in rest:
+        print('\nDiebold-Mariano test for forecasting accuracy \n\n\n',
+              'Model to test: ', model, ' and ', rest_model, '\n',
+              'Test statistic: ', dm_test(actual_lst = df['DAILY_RV'], prediction_1 = df[model],
+                      prediction_2 = df[rest_model], horizon = 288)[0], '\n',
+              'P value: ', dm_test(actual_lst = df['DAILY_RV'], prediction_1 = df[model],
+                      prediction_2 = df[rest_model], horizon = 288)[1], '\n',
+              '---------------------------------------------------')
+
+# Visualization
+plt.figure(dpi = 100)
+plt.plot(df['DAILY_RV'], linewidth = 2, color = 'navy')
+plt.plot(df['NAIVE'], linewidth = 1, color = 'gold', alpha=0.5)
+plt.plot(df['HAR'], linewidth=1, color = 'gray', alpha=0.5)
+plt.plot(df['FNN-HAR'], linewidth=1, color = 'brown', alpha=0.5)
+plt.plot(df['SRN'], linewidth=1, color = 'green', alpha=0.5)
+plt.plot(df['LSTM'], linewidth=1, color = 'orange', alpha=0.5)
+plt.plot(df['GRU'], linewidth=1, color = 'red', alpha=0.5)
+plt.ylabel('Realized volatility')
+plt.xlabel('Time horizon')
+plt.title('Out-of-sample predictions')
+plt.show()
+plt.savefig('output/low_volatility_long.png')
+
+# 3. High volatility time longer training data set
+harfnn = pd.read_csv(r'data/harfnn_outofsample_predictions_low_vol_short.csv', sep = ';')
+rnn = pd.read_csv(r'data/rnn_outofsample_predictions_low_vol_short.csv', sep = ';')
+del rnn['DAILY_RV']
+
+# Predictions
+df = pd.concat([harfnn, rnn], axis = 1)
+del df['Unnamed: 0']
+
+models_list = ['NAIVE', 'HAR', 'FNN-HAR', 'SRN', 'LSTM', 'GRU']
+for model in models_list:
+    rest = [n for n in models_list if n != model]
+    for rest_model in rest:
+        print('\nDiebold-Mariano test for forecasting accuracy \n\n\n',
+              'Model to test: ', model, ' and ', rest_model, '\n',
+              'Test statistic: ', dm_test(actual_lst = df['DAILY_RV'], prediction_1 = df[model],
+                      prediction_2 = df[rest_model], horizon = 288)[0], '\n',
+              'P value: ', dm_test(actual_lst = df['DAILY_RV'], prediction_1 = df[model],
+                      prediction_2 = df[rest_model], horizon = 288)[1], '\n',
+              '---------------------------------------------------')
+
+# Visualization
+plt.figure(dpi = 100)
+plt.plot(df['DAILY_RV'], linewidth = 2, color = 'navy')
+plt.plot(df['NAIVE'], linewidth = 1, color = 'gold', alpha=0.5)
+plt.plot(df['HAR'], linewidth=1, color = 'gray', alpha=0.5)
+plt.plot(df['FNN-HAR'], linewidth=1, color = 'brown', alpha=0.5)
+plt.plot(df['SRN'], linewidth=1, color = 'green', alpha=0.5)
+plt.plot(df['LSTM'], linewidth=1, color = 'orange', alpha=0.5)
+plt.plot(df['GRU'], linewidth=1, color = 'red', alpha=0.5)
+plt.ylabel('Realized volatility')
+plt.xlabel('Time horizon')
+plt.title('Out-of-sample predictions')
+plt.show()
+plt.savefig('output/low_volatility_short.png')

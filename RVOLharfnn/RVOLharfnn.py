@@ -221,10 +221,7 @@ from dalib.packages import *
 from numpy.random import seed
 seed(1)
 
-
-
 # Slicing the data frame
-start_date = ''; end_date = '' # start date: set the date here a string
 
 """
 Please note that for at our empirical work we consider four different time perios as follows:
@@ -276,8 +273,8 @@ fnn_har_errors = fnn_har.error_df()
 
 # Save the predictions and errors
 errors_naive_har_fnn = NAIVE_errors.append([har_errors, fnn_har_errors]).reset_index(drop = True)
-errors_naive_har_fnn.to_csv(r'output/errors_' + str(Scenario[2]) + '.csv')
+errors_naive_har_fnn.to_csv(r'output/harfnn_errors_' + str(Scenario[2]) + '.csv', sep = ';')
 
-outofsample_predictions = pd.concat([NAIVE_test, predicted_test_Y_HAR, predicted_test_Y_FNN], axis = 1).reset_index(drop = True)
-outofsample_predictions.columns = ['NAIVE', 'HAR', 'FNN-HAR']
-outofsample_predictions.to_csv(r'output/outofsample_predictions_' + str(Scenario[2]) + '.csv')
+outofsample_predictions = pd.concat([pd.Series(test_Y), NAIVE_test, predicted_test_Y_HAR, predicted_test_Y_FNN], axis = 1).reset_index(drop = True)
+outofsample_predictions.columns = ['DAILY_RV', 'NAIVE', 'HAR', 'FNN-HAR']
+outofsample_predictions.to_csv(r'output/harfnn_outofsample_predictions_' + str(Scenario[2]) + '.csv', sep = ';')

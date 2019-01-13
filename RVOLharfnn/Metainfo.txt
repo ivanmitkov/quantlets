@@ -15,11 +15,11 @@ Datafile:
 - raw_data.csv
 
 Output:
-- errors_high_vol_long.csv
-- errors_high_vol_short.csv
-- errors_low_vol_long.csv
-- errors_low_vol_short.csv
-- outofsample_predictions_high_vol_long.csv
-- outofsample_predictions_high_vol_short.csv
-- outofsample_predictions_low_vol_long.csv
-- outofsample_predictions_low_vol_short.csv
+- harfnn_errors_high_vol_long.csv
+- harfnn_errors_high_vol_short.csv
+- harfnn_errors_low_vol_long.csv
+- harfnn_errors_low_vol_short.csv
+- harfnn_outofsample_predictions_high_vol_long.csv
+- harfnn_outofsample_predictions_high_vol_short.csv
+- harfnn_outofsample_predictions_low_vol_long.csv
+- harfnn_outofsample_predictions_low_vol_short.csv
