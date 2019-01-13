@@ -149,7 +149,7 @@ plt.title('Out-of-sample predictions')
 plt.show()
 plt.savefig('output/high_volatility_short.png')
 
-# 3. High volatility time longer training data set
+# 3. Low volatility time longer training data set
 harfnn = pd.read_csv(r'data/harfnn_outofsample_predictions_low_vol_long.csv', sep = ';')
 rnn = pd.read_csv(r'data/rnn_outofsample_predictions_low_vol_long.csv', sep = ';')
 del rnn['DAILY_RV']
@@ -185,7 +185,7 @@ plt.title('Out-of-sample predictions')
 plt.show()
 plt.savefig('output/low_volatility_long.png')
 
-# 3. High volatility time longer training data set
+# 4. Low volatility time longer training data set
 harfnn = pd.read_csv(r'data/harfnn_outofsample_predictions_low_vol_short.csv', sep = ';')
 rnn = pd.read_csv(r'data/rnn_outofsample_predictions_low_vol_short.csv', sep = ';')
 del rnn['DAILY_RV']
