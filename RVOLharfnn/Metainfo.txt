@@ -10,3 +10,16 @@ Keywords: cryptocurrency, RV, HAR, FNN, realized volatility
 Author: Ivan Mitkov
 
 Submitted:  Fri, January 11 2019 by Ivan Mitkov
+
+Datafile:
+- raw_data.csv
+
+Output:
+- errors_high_vol_long.csv
+- errors_high_vol_short.csv
+- errors_low_vol_long.csv
+- errors_low_vol_short.csv
+- outofsample_predictions_high_vol_long.csv
+- outofsample_predictions_high_vol_short.csv
+- outofsample_predictions_low_vol_long.csv
+- outofsample_predictions_low_vol_short.csv

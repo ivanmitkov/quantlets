@@ -6,12 +6,15 @@ Created on Sat Nov 10 14:39:15 2018
 @author: ivanmitkov
 """
 
-# MLP for Pima Indians Dataset with grid search via sklearn
+# Import the required moduldes 
+
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import GridSearchCV
 import numpy
+from numpy.random import seed
+seed(1)
 
 def train_test_data(dataframe, fraction, RNN):
     import pandas as pd
@@ -44,41 +47,6 @@ def train_test_data(dataframe, fraction, RNN):
         train_X = np.reshape(train_X, (train_X.shape[0], 1, 1))
         test_X = np.reshape(test_X, (test_X.shape[0], 1, 1))
         return(train_X, train_Y, test_X, test_Y) 
-        
-"""        
-def train_test_data(squared_retuns, frequency, fraction, back_times):
-    import pandas as pd
-    daily_observations = int(60 / frequency * 24)
-    from numpy import sqrt
-    dataframe = pd.DataFrame()
-    dataframe['DAILY_RV'] = sqrt(squared_retuns.rolling(daily_observations).sum())
-    dataframe['WEEKLY_RV'] = sqrt(squared_retuns.rolling(7 * daily_observations).sum())    
-    dataframe['MONTHLY_RV'] = sqrt(squared_retuns.rolling(30 * daily_observations).sum())
-    dataframe['RV_DAY_AHEAD'] = dataframe['DAILY_RV'].shift(-daily_observations)
-    dataframe = dataframe.dropna(how = 'any')
-    train_data = dataframe.sample(frac = fraction)
-    index_train = train_data.index
-    index_test = list(set(dataframe.index)-set(index_train))
-    test_data = dataframe.ix[index_test]
-    train_data = train_data.reset_index(drop = True)
-    test_data = test_data.reset_index(drop = True)  
-    train_data = train_data.values
-    train_data = train_data.astype('float32') 
-    test_data = test_data.values
-    test_data = test_data.astype('float32') 
-    
-    # reshape into X=t and Y=t+1
-    trainX = train_data[..., 0]
-    trainY = train_data[..., 3]
-    testX = test_data[..., 0]
-    testY = train_data[..., 3]
-    
-    # reshape input to be [samples, time steps, features]
-    trainX = numpy.reshape(trainX, (trainX.shape[0], 1, 1))
-    testX = numpy.reshape(testX, (testX.shape[0], 1, 1))
-    return(trainX, trainY, testX, testY)
-"""
-    
     
 class Neural_Networks(object):
     import numpy as np
@@ -93,6 +61,8 @@ class Neural_Networks(object):
     from keras import optimizers
     import math
     from sklearn.metrics import mean_squared_error
+    from numpy.random import seed
+    seed(1)
     
     def __init__(self, NN_type, nn_inputs, train_X, train_Y, test_X, test_Y):       
         self.NN_type = NN_type
@@ -119,10 +89,6 @@ class Neural_Networks(object):
         from keras import optimizers
         import math
         from sklearn.metrics import mean_squared_error
-        import numpy as np 
-        import numpy.random as rd
-        rd.seed(7)        
- 
         
         
         if self.NN_type == 'SimpleRNN':
@@ -147,7 +113,7 @@ class Neural_Networks(object):
                     
                     for epoch in n_epochs:
                         for size in batch_size:
-                            model.fit(self.train_X, self.train_Y, epochs = epoch, batch_size = size, verbose = 0, shuffle = False)
+                            model.fit(self.train_X, self.train_Y, epochs = epoch, batch_size = size, verbose = 1)
                             grid = pd.DataFrame()
                             grid['MODEL'] = [(i)]
                             grid['LAYERS'] = [(dict_models[i]['n_layers'])]
@@ -258,57 +224,44 @@ class Neural_Networks(object):
         if self.NN_type == 'SimpleRNN':
 
             if n_layers == 1:
-                self.model.add(SimpleRNN(n_units[0], input_shape=(self.time_steps, self.nn_inputs)))
-                self.model.add(LeakyReLU(alpha=0.1))
+                self.model.add(SimpleRNN(n_units[0], input_shape=(self.time_steps, self.nn_inputs), activation = activ_funct))
             else:
-                self.model.add(SimpleRNN(n_units[0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True))
-                self.model.add(LeakyReLU(alpha=0.1))
+                self.model.add(SimpleRNN(n_units[0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True, activation = activ_funct))
             for i in range(2, n_layers+1):
                 if i < n_layers:
-                    self.model.add(SimpleRNN(n_units[i-1], return_sequences = True))
-                    self.model.add(LeakyReLU(alpha=0.1))
+                    self.model.add(SimpleRNN(n_units[i-1], return_sequences = True, activation = activ_funct))
                 else:
-                    self.model.add(SimpleRNN(n_units[len(n_units)-1], return_sequences = False))
-                    self.model.add(LeakyReLU(alpha=0.1))
+                    self.model.add(SimpleRNN(n_units[len(n_units)-1], return_sequences = False, activation = activ_funct))
 
         if self.NN_type == 'LSTM':
 
             if n_layers == 1:
-                self.model.add(LSTM(n_units[0], input_shape=(self.time_steps, self.nn_inputs)))
-                self.model.add(LeakyReLU(alpha=0.1))
+                self.model.add(LSTM(n_units[0], input_shape=(self.time_steps, self.nn_inputs), activation = activ_funct))
             else:
-                self.model.add(LSTM(n_units[0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True))
-                self.model.add(LeakyReLU(alpha=0.1))
+                self.model.add(LSTM(n_units[0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True, activation = activ_funct))
             for i in range(2, n_layers+1):
                 if i < n_layers:
-                    self.model.add(LSTM(n_units[i-1], return_sequences = True))
-                    self.model.add(LeakyReLU(alpha=0.1))
+                    self.model.add(LSTM(n_units[i-1], return_sequences = True, activation = activ_funct))
                 else:
-                    self.model.add(LSTM(n_units[len(n_units)-1], return_sequences = False))
-                    self.model.add(LeakyReLU(alpha=0.1))                    
+                    self.model.add(LSTM(n_units[len(n_units)-1], return_sequences = False, activation = activ_funct))
 
                 
         if self.NN_type == 'GRU':
 
             if n_layers == 1:
-                self.model.add(GRU(n_units[0], input_shape=(self.time_steps, self.nn_inputs)))
-                self.model.add(LeakyReLU(alpha=0.1))
+                self.model.add(GRU(n_units[0], input_shape=(self.time_steps, self.nn_inputs), activation = activ_funct))
             else:
-                self.model.add(GRU(n_units[0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True))
-                self.model.add(LeakyReLU(alpha=0.1))
+                self.model.add(GRU(n_units[0], input_shape=(self.time_steps, self.nn_inputs), return_sequences = True, activation = activ_funct))
             for i in range(2, n_layers+1):
                 if i < n_layers:
-                    self.model.add(GRU(n_units[i-1], return_sequences = True))
-                    self.model.add(LeakyReLU(alpha=0.1))
+                    self.model.add(GRU(n_units[i-1], return_sequences = True, activation = activ_funct))
                 else:
-                    self.model.add(GRU(n_units[len(n_units)-1], return_sequences = False))
-                    self.model.add(LeakyReLU(alpha=0.1))
+                    self.model.add(GRU(n_units[len(n_units)-1], return_sequences = False, activation = activ_funct))
         self.model.add(Dense(self.output))
         adam = optimizers.adam(lr = learning_rate)
         self.model.compile(loss = 'mse', optimizer = 'adam', metrics=['mse', 'mae', 'mape'])
         self.model.fit(self.train_X, self.train_Y, epochs = n_epochs, batch_size = batch_size, 
-                       verbose=0, validation_data = (self.test_X, self.test_Y), shuffle = False)
-        print(self.model.summary())
+                       verbose=0, shuffle = False, validation_data = (self.test_X, self.test_Y))
 
     def prediction(self):
         import pandas as pd
@@ -333,9 +286,8 @@ class Neural_Networks(object):
         from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, median_absolute_error, mean_squared_log_error 
 
         error = pd.DataFrame()
-        #error['COEF'] = pd.Series(('Root mean squared error', 'Mean absolute error', 'Mean squared logarithmic error'))
-        #error['MODEL'] = self.NN_type
-        """
+        error['COEF'] = pd.Series(('Root mean squared error', 'Mean absolute error', 'Mean squared logarithmic error'))
+        error['MODEL'] = self.NN_type
         error['TRAIN'] = pd.Series((sqrt(mean_squared_error(self.train_Y, self.trainPredict)),
                                          mean_absolute_error(self.train_Y, self.trainPredict),
                                          mean_squared_log_error(self.train_Y, self.trainPredict)))
@@ -343,7 +295,7 @@ class Neural_Networks(object):
         error['TEST'] = pd.Series((sqrt(mean_squared_error(self.test_Y, self.testPredict)),
                                         mean_absolute_error(self.test_Y, self.testPredict),
                                         mean_squared_log_error(self.test_Y, self.testPredict)))       
-        """
+        
         error['ERRORS'] = pd.Series((sqrt(mean_squared_error(self.train_Y, self.trainPredict)),
                                  mean_absolute_error(self.train_Y, self.trainPredict),
                                  mean_squared_log_error(self.train_Y, self.trainPredict),
@@ -375,5 +327,118 @@ class Neural_Networks(object):
             plt.title('Test data: Prediction through ' + self.NN_type)
             plt.legend()
             plt.show()                            
-                        
-         
+
+# Actual analysis                        
+
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+# Import of packages, set wordking directiory
+import os, sys
+os.chdir(r'/Users/ivanmitkov/Desktop/repository/quantlets/RVOLrnn')
+from dalib.packages import *
+
+# In order to keep constant outputs, avoiding different weights initialization
+from numpy.random import seed
+seed(1)
+
+# Slicing the data frame
+"""
+Please note that for at our empirical work we consider four different time perios as follows:
+    1. High volatile times:
+        1.1 start_date = '2017-10-01'; end_date = '2018-01-01' # long version
+        1.2 start_date = '2017-11-01'; end_date = '2017-12-01' # short version        
+    2. Low volatile times:
+        2.1 start_date = '2018-04-15'; end_date = '2018-07-15' # long version
+        2.2 start_date = '2018-05-15'; end_date = '2017-08-15' # short version                
+
+"""
+dates = [('2017-10-01', '2018-01-01', 'high_vol_long'), ('2017-11-01', '2017-12-01', 'high_vol_short'), 
+         ('2018-04-15', '2018-07-15', 'low_vol_long'), ('2018-05-15', '2018-06-15', 'low_vol_short')]
+
+# Choose which scenario
+Scenario = [dates[0][0], dates[0][1], dates[0][2]] # Scenario high volatiolity time, longer training
+Scenario = [dates[1][0], dates[1][1], dates[1][2]] # Scenario high volatiolity time, short training
+Scenario = [dates[2][0], dates[2][1], dates[2][2]] # Scenario low volatiolity time, longer training
+Scenario = [dates[3][0], dates[3][1], dates[3][2]] # Scenario low volatiolity time, shor training
+
+# Import data
+df = pd.read_csv(r'data/raw_data.csv', sep = ';')
+df = df[(df['DATE'] > Scenario[0]) & (df['DATE'] < Scenario[1])].reset_index(drop = True)
+
+# Train-Test-Data
+train_X, train_Y, test_X, test_Y = train_test_data(dataframe = df, 
+                                                   fraction = 0.8,
+                                                   RNN = True)
+
+# Simple Recurrent Neural Network
+simple_rnn = Neural_Networks('SimpleRNN', nn_inputs = 1, train_X = train_X, train_Y = train_Y,
+                             test_X = test_X, test_Y = test_Y)
+    
+# Train
+simple_rnn.create_nn(n_layers = 1, n_units = [2], n_epochs = 100, batch_size = 500, 
+                     activ_funct = 'elu', learning_rate = 0.005)
+  
+# Predictions
+rnn_train_prediction, rnn_test_prediction = simple_rnn.prediction()
+    
+# Evaluation
+simple_rnn.evaluation()
+    
+# Save loss errors
+simple_rnn_errors = simple_rnn.error_df()
+    
+# Visualization
+simple_rnn.visualization(test_visualization = False)
+simple_rnn.visualization(test_visualization = True)
+
+    
+# LSTM Recurrent Neural Network 
+lstm = Neural_Networks('LSTM', nn_inputs = 1, train_X = train_X, train_Y = train_Y,
+                       test_X = test_X, test_Y = test_Y)
+    
+# Train
+lstm.create_nn(n_layers = 1, n_units = [2], n_epochs = 100, batch_size = 500, 
+               activ_funct = 'elu', learning_rate = 0.005)
+    
+# Predictions
+lstm_train_prediction, lstm_test_prediction = lstm.prediction()
+    
+# Evaluation
+lstm.evaluation()
+    
+# Save loss errors
+lstm_errors = lstm.error_df()
+    
+# Visualization
+lstm.visualization(test_visualization = False)
+lstm.visualization(test_visualization = True)
+
+# 3. Train the GRU Recurrent Neural Network with the optimal parameters
+gru = Neural_Networks('GRU', nn_inputs = 1, train_X = train_X, train_Y = train_Y,
+                                 test_X = test_X, test_Y = test_Y)
+    
+# Train
+gru.create_nn(n_layers = 1, n_units = [2], n_epochs = 100, batch_size = 500, 
+              activ_funct = 'elu', learning_rate = 0.005)
+    
+# Predictions
+gru_train_prediction, gru_test_prediction = gru.prediction()
+    
+# Evaluation
+gru.evaluation()
+    
+# Save loss errors
+gru_errors = gru.error_df()
+    
+# Visualization
+gru.visualization(test_visualization = False)
+gru.visualization(test_visualization = True)
+    
+# Save the predictions and errors    
+errors = simple_rnn_errors.append([lstm_errors, gru_errors]).reset_index(drop = True)
+errors.to_csv(r'output/errors_' + str(Scenario[2]) + '.csv')
+
+outofsample_predictions = pd.concat([rnn_test_prediction, lstm_test_prediction, gru_test_prediction], axis = 1).reset_index(drop = True)
+outofsample_predictions.columns = ['SRN', 'LSTM', 'GRU']
+outofsample_predictions.to_csv(r'output/outofsample_predictions_' + str(Scenario[2]) + '.csv')
