@@ -1,0 +1,12 @@
+
+Name of Quantlet: RVOLaccur
+
+Published in: Master thesis
+
+Description: forecasts the realized volatility of a portfolio from cryptocurrencies by the means of recurrent neural networks
+
+Keywords: cryptocurrency, RNN, LSTM, GRU
+
+Author: Ivan Mitkov
+
+Submitted:  Fri, January 11 2019 by Ivan Mitkov

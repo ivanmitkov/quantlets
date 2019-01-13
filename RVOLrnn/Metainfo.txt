@@ -1,5 +1,5 @@
 
-Name of Quantlet: CRYPTrnn
+Name of Quantlet: RVOLrnn
 
 Published in: Master thesis
 
