@@ -19,91 +19,99 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # Import of packages, set wordking directiory
 import os
-os.chdir(r'/Users/ivanmitkov/Documents/Masterarbeit/Skripte')
+os.chdir(r'/Users/ivanmitkov/Desktop/repository/quantlets/RVOLprep')
 from dalib.packages import *
-from dalib.har_fnn import *
 import pickle
 data = pickle.load(open('data/price_btc_eth_ltc_str_xmr_xrp_20160101_20180831.p', "rb"))
-#data = pickle.load(open(r'/Users/ivanmitkov/Downloads/price_btc_eth_ltc_str_xmr_xrp_20160101_20180831.p', "rb"))
-data = data[data.index > '2017-07-15 23:55:00']
 
-#Graph
+# Selecting only the "open" prices
+data = data[[('btc_usdt', 'open'), ('eth_usdt', 'open'), ('ltc_usdt', 'open'), ('str_usdt', 'open'), ('xmr_usdt', 'open'), ('xrp_usdt', 'open')]]
+data.columns = ['BTC', 'ETH', 'LTC', 'STR', 'XMR', 'XRP']
+
+#Graph of the daily prices assuming the day starts with the first observation of our data frame
 plt.figure(dpi = 100)
-plt.plot(data[('btc_usdt', 'open')].iloc[::288], color = 'b', linewidth=1)
-plt.plot(data[('eth_usdt', 'open')].iloc[::288], color = 'r', linewidth=1)
-plt.plot(data[('ltc_usdt', 'open')].iloc[::288], color = 'g', linewidth=1)
-plt.plot(data[('str_usdt', 'open')].iloc[::288], color = 'orange', linewidth=1)
-plt.plot(data[('xmr_usdt', 'open')].iloc[::288], color = 'violet', linewidth=1)
-plt.plot(data[('xrp_usdt', 'open')].iloc[::288], color = 'black', linewidth=1)
+plt.plot(data['BTC'].iloc[::288], color = 'b', linewidth=1)
+plt.plot(data['ETH'].iloc[::288], color = 'r', linewidth=1)
+plt.plot(data['LTC'].iloc[::288], color = 'g', linewidth=1)
+plt.plot(data['STR'].iloc[::288], color = 'orange', linewidth=1)
+plt.plot(data['XMR'].iloc[::288], color = 'violet', linewidth=1)
+plt.plot(data['XRP'].iloc[::288], color = 'black', linewidth=1)
 plt.ylabel('Price')
 plt.xlabel('Time')
-plt.xticks(rotation=45)
+plt.xticks(rotation = 45)
 plt.title('Prices of the six cryptocurrencies')
+plt.savefig('crypto_price_evolution.png')
 plt.show()
 
-
-# Descriptive statistics
-import numpy as np
-coins = [data[('btc_usdt', 'open')], data[('eth_usdt', 'open')], data[('ltc_usdt', 'open')], data[('str_usdt', 'open')], data[('xmr_usdt', 'open')], data[('xrp_usdt', 'open')]]
+# Descriptive statistics. We concentrate only in the used in our empirical work period
+coins = data.columns
 for i in coins:
-    print("{:.2e}".format(np.percentile(i, 75)), end=' & ', flush=True)
+    print('For the prices of ', i, 'the following statistics are valid:\n')
+    print('Min:          ', '{:.2e}'.format(data[i][data.index > '2017-08-31 23:55:00'].min()), end='\n', flush=True)    
+    print('Max:          ', '{:.2e}'.format(data[i][data.index > '2017-08-31 23:55:00'].max()), end='\n', flush=True)    
+    print('Mean:         ', '{:.2e}'.format(data[i][data.index > '2017-08-31 23:55:00'].mean()), end='\n', flush=True)
+    print('Median:       ', '{:.2e}'.format(data[i][data.index > '2017-08-31 23:55:00'].median()), end='\n', flush=True)
+    print('Std.:         ', '{:.2e}'.format(data[i][data.index > '2017-08-31 23:55:00'].std()), end='\n', flush=True)
+    print('2nd quartile: ', '{:.2e}'.format(np.percentile(data[i][data.index > '2017-08-31 23:55:00'], 25)), end='\n', flush=True)
+    print('3rd quartile: ', '{:.2e}'.format(np.percentile(data[i][data.index > '2017-08-31 23:55:00'], 75)), end='\n\n\n', flush=True)
+    
             
             
 # Calculating portfolio
-data['PORTFOLIO'] = data[('btc_usdt', 'open')] * (1/6) + \
-             data[('eth_usdt', 'open')] *  (1/6) + \
-             data[('ltc_usdt', 'open')] *  (1/6) + \
-             data[('str_usdt', 'open')] *  (1/6) + \
-             data[('xmr_usdt', 'open')] *  (1/6) + \
-             data[('xrp_usdt', 'open')] *  (1/6)
+data['PORTFOLIO'] = data['BTC'] * (1/6) + \
+                     data['ETH'] *  (1/6) + \
+                     data['LTC'] *  (1/6) + \
+                     data['STR'] *  (1/6) + \
+                     data['XMR'] *  (1/6) + \
+                     data['XRP'] *  (1/6)
 
 # Visualization portfolio
 plt.figure(dpi = 100)
-plt.plot(data['PORTFOLIO'].iloc[::288], color = 'b', linewidth=1)
+plt.plot(data['PORTFOLIO'][data.index > '2017-08-31 23:55:00'].iloc[::288], color = 'b', linewidth=1)
 plt.ylabel('Price')
 plt.xlabel('Time')
 plt.xticks(rotation=45)
 plt.title('Price of the portfolio')
+plt.savefig('portfolio_prices.png')
 plt.show() 
              
-# Log returns
-data['RETURNS'] = np.log(data['PORTFOLIO']) - np.log(data['PORTFOLIO'].shift(1))
-data['btc_usdt_RETURNS'] = np.log(data[('btc_usdt', 'open')]) - np.log(data[('btc_usdt', 'open')].shift(1))
-data['eth_usdt_RETURNS'] = np.log(data[('eth_usdt', 'open')]) - np.log(data[('eth_usdt', 'open')].shift(1))
-data['ltc_usdt_RETURNS'] = np.log(data[('ltc_usdt', 'open')]) - np.log(data[('ltc_usdt', 'open')].shift(1))
-data['str_usdt_RETURNS'] = np.log(data[('str_usdt', 'open')]) - np.log(data[('str_usdt', 'open')].shift(1))
-data['xmr_usdt_RETURNS'] = np.log(data[('xmr_usdt', 'open')]) - np.log(data[('xmr_usdt', 'open')].shift(1))
-data['xrp_usdt_RETURNS'] = np.log(data[('xrp_usdt', 'open')]) - np.log(data[('xrp_usdt', 'open')].shift(1))
+# Log returns for 5 mins frequency
+def logreturns(series):
+    data[series + '_LOGRETURN'] = np.log(data[series]) - np.log(data[series].shift(1))
 
-coins = [data['btc_usdt_RETURNS'], data['eth_usdt_RETURNS'], data['ltc_usdt_RETURNS'], data['str_usdt_RETURNS'], data['xmr_usdt_RETURNS'], data['xrp_usdt_RETURNS'], data['RETURNS']]
+coins = data.columns
 for i in coins:
-    print("{:.2e}".format(i.std()), end=' & ', flush=True)
+    logreturns(i)
+    
+# Log return visualization of our portfolio
+plt.figure(dpi = 100)
+plt.plot(data['PORTFOLIO_LOGRETURN'][data.index > '2017-08-31 23:55:00'], color = 'b', linewidth=1)
+plt.ylabel('Price')
+plt.xlabel('Time')
+plt.xticks(rotation=45)
+plt.title('Log returns (5 mins frequency) from the portfolio')
+plt.savefig('portfolio_daily_logreturns.png')
+plt.show()     
+    
+for returns in ['BTC_LOGRETURN', 'ETH_LOGRETURN', 'LTC_LOGRETURN', 'STR_LOGRETURN', 'XMR_LOGRETURN', 'XRP_LOGRETURN', 'PORTFOLIO_LOGRETURN']:    
+    print('For the log returns of ', returns, 'the following statistics are valid:\n')    
+    print('Mean:         ', '{:.2e}'.format(data[returns][data.index > '2017-08-31 23:55:00'].mean()), end='\n', flush=True)
+    print('Median:       ', '{:.2e}'.format(data[returns][data.index > '2017-08-31 23:55:00'].median()), end='\n', flush=True)    
+    print('Std.:         ', '{:.2e}'.format(data[returns][data.index > '2017-08-31 23:55:00'].std()), end='\n', flush=True)
+    print('Skewnes:      ', '{:.2e}'.format(skew(data[returns][data.index > '2017-08-31 23:55:00'])), end='\n', flush=True)    
+    print('Kurtosis:     ', '{:.2e}'.format(kurtosis(data[returns][data.index > '2017-08-31 23:55:00'])), end='\n', flush=True)        
+    print('JB test stat: ', '{:.2e}'.format(jarque_bera(data[returns][data.index > '2017-08-31 23:55:00'])[0]), end='\n', flush=True)     
+    print('JB p value:   ', '{:.2e}'.format(jarque_bera(data[returns][data.index > '2017-08-31 23:55:00'])[1]), end='\n\n\n', flush=True)
+    
 
-from scipy.stats import kurtosis
-from scipy.stats import skew
-from scipy import stats
-
-data = data[1:]    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Log-Returns
+# Slicing the data frame in order not to have missingness
+data = data[data.index > '2017-07-15 23:55:00']
+    
+# Saving a new column with the data
 data['DATE'] = data.index
 data.reset_index(drop = True, inplace = True)
 
+# Calculating the all kinds of log returns and realized volatilites, which are necessery for the master thesis
 def log_returns(series, dateseries):
     from numpy import sqrt    
         
@@ -120,8 +128,6 @@ def log_returns(series, dateseries):
     result['RETURNS'] = np.log(result['PRICE']) - np.log(result['PRICE'].shift(1))
     result['DAILY_RETURNS'] = np.log(result['PRICE']) - np.log(result['PRICE'].shift(12 * 24))
     result['SQUARED_RETURNS'] = result['RETURNS'] ** 2
-    
-    
     result['DAILY_RV'] = sqrt(result['SQUARED_RETURNS'].rolling(12 * 24).sum())
     result['WEEKLY_RV'] = result['DAILY_RV'].rolling(7 * 24 * 12).mean()   
     result['MONTHLY_RV'] = result['DAILY_RV'].rolling(30 * 24 * 12).mean()
@@ -134,28 +140,6 @@ def log_returns(series, dateseries):
     
 # Apply log returns on both data frames    
 result = log_returns(series = data['PORTFOLIO'], dateseries = data['DATE'])
-
-plt.figure()
-plt.plot(result['NAIVE'])
-plt.plot(result['TARGET_RV'])
-plt.show()
-
-# Log return visualization
-plt.figure(dpi = 100)
-plt.plot(data['DATE'], data['RETURNS'], color = 'b', linewidth=1)
-plt.ylabel('Price')
-plt.xlabel('Time')
-plt.xticks(rotation=45)
-plt.title('Log returns (5 mins frequency) from the portfolio')
-plt.show() 
              
-# Descriptive statistics             
-# mean, deviation, skewness, kurtosis, Jarque-Bera
-from scipy.stats import kurtosis
-from scipy.stats import skew
-
-
-
-             
-# Portfolio price vizualization
-result.to_csv(r'data/raw_data.csv', index = False, sep = ';')
+# Saving the prepared data
+result.to_csv(r'output/raw_data_prepared.csv', index = False, sep = ';')
