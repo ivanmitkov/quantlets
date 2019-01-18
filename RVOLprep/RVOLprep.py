@@ -142,4 +142,4 @@ def log_returns(series, dateseries):
 result = log_returns(series = data['PORTFOLIO'], dateseries = data['DATE'])
              
 # Saving the prepared data
-result.to_csv(r'output/raw_data_prepared.csv', index = False, sep = ';')
+result.to_csv(r'raw_data_prepared.csv', index = False, sep = ';')
